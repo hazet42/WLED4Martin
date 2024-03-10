@@ -7196,6 +7196,79 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
 static const char _data_FX_MODE_WATERFALL[] PROGMEM = "Waterfall@!,Adjust color,Select bin,Volume (min);!,!;!;1f;c2=0,m12=2,si=0"; // Circles, Beatsin
 
 
+/// START Martins Implementation
+
+/*
+ * Welcome function - adapted from Color wipe function
+ * LEDs are turned on (color1) in sequence, then a standard mode is turned on
+ * Used for the first welcome after turning on the system
+ * 
+ * Implemented  by Thomas
+ */
+uint16_t color_welcome(bool rev, bool useRandomColors) {
+  uint32_t cycleTime = 750 + (255 - SEGMENT.speed)*150;
+  uint32_t perc = strip.now % cycleTime;
+  uint16_t prog = (perc * 65535) / cycleTime;
+  bool back = (prog > 32767);
+  if (back) {
+    prog -= 32767;
+    if (SEGENV.step == 0) SEGENV.step = 1;
+  } else {
+    if (SEGENV.step == 2) SEGENV.step = 3; //trigger color change
+  }
+
+  if (useRandomColors) {
+    if (SEGENV.call == 0) {
+      SEGENV.aux0 = random8();
+      SEGENV.step = 3;
+    }
+    if (SEGENV.step == 1) { //if flag set, change to new random color
+      SEGENV.aux1 = get_random_wheel_index(SEGENV.aux0);
+      SEGENV.step = 2;
+    }
+    if (SEGENV.step == 3) {
+      SEGENV.aux0 = get_random_wheel_index(SEGENV.aux1);
+      SEGENV.step = 0;
+    }
+  }
+
+  uint16_t ledIndex = (prog * SEGLEN) >> 15;
+  uint16_t rem = 0;
+  rem = (prog * SEGLEN) * 2; //mod 0xFFFF
+  rem /= (SEGMENT.intensity +1);
+  if (rem > 255) rem = 255;
+
+  uint32_t col1 = useRandomColors? SEGMENT.color_wheel(SEGENV.aux1) : SEGCOLOR(1);
+  for (int i = 0; i < SEGLEN; i++)
+  {
+    uint16_t index = (rev && back)? SEGLEN -1 -i : i;
+    uint32_t col0 = useRandomColors? SEGMENT.color_wheel(SEGENV.aux0) : SEGMENT.color_from_palette(index, true, PALETTE_SOLID_WRAP, 0);
+
+    if (i < ledIndex)
+    {
+      SEGMENT.setPixelColor(index, back? col1 : col0);
+    } else
+    {
+      SEGMENT.setPixelColor(index, back? col0 : col1);
+      if (i == ledIndex) SEGMENT.setPixelColor(index, color_blend(back? col0 : col1, back? col1 : col0, rem));
+    }
+  }
+  return FRAMETIME;
+}
+
+
+/*
+ * Lights all LEDs one after another.
+ */
+uint16_t mode_welcome(void) {
+  return color_welcome(false, false);
+}
+static const char _data_FX_MODE_WELCOME[] PROGMEM = "Welcome@!,!;!,!;!";
+
+/// END Martins Implementation
+
+
+
 #ifndef WLED_DISABLE_2D
 /////////////////////////
 //     ** 2D GEQ       //
@@ -7814,6 +7887,8 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_TV_SIMULATOR, &mode_tv_simulator, _data_FX_MODE_TV_SIMULATOR);
   addEffect(FX_MODE_DYNAMIC_SMOOTH, &mode_dynamic_smooth, _data_FX_MODE_DYNAMIC_SMOOTH);
 
+  addEffect(FX_MODE_WELCOME, &mode_welcome, _data_FX_MODE_WELCOME);
+
   // --- 1D audio effects ---
   addEffect(FX_MODE_PIXELS, &mode_pixels, _data_FX_MODE_PIXELS);
   addEffect(FX_MODE_PIXELWAVE, &mode_pixelwave, _data_FX_MODE_PIXELWAVE);
@@ -7849,6 +7924,8 @@ void WS2812FX::setupEffectData() {
 
   addEffect(FX_MODE_WAVESINS, &mode_wavesins, _data_FX_MODE_WAVESINS);
   addEffect(FX_MODE_ROCKTAVES, &mode_rocktaves, _data_FX_MODE_ROCKTAVES);
+
+
 
   // --- 2D  effects ---
 #ifndef WLED_DISABLE_2D
