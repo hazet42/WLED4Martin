@@ -1,5 +1,5 @@
 {
-  "name": "wled",
+  "name": "martinsleds",
   "version": "0.14.2-b1",
   "description": "Tools for WLED project",
   "main": "tools/cdata.js",
@@ -13,14 +13,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Aircoookie/WLED.git"
+    "url": "git+https://github.com/hazet42/WLED4Martin.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Aircoookie/WLED/issues"
+    "url": "https://github.com/hazet42/WLED4Martin/issues"
   },
-  "homepage": "https://github.com/Aircoookie/WLED#readme",
+  "homepage": "https://github.com/hazet42/WLED4Martin#readme",
   "dependencies": {
     "clean-css": "^4.2.3",
     "html-minifier-terser": "^5.1.1",
